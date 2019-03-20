@@ -6,6 +6,8 @@ https://www.instructables.com/id/Ultimate-Intelligent-Fully-Automatic-Drone-Robo
 https://www.instructables.com/id/The-Drone-Pi/  
 https://sites.google.com/site/npaecopterguide/source-codes/mission-planner-source-code
 https://javiermunhoz.com/blog/2017/09/09/open-source-uav-autopilot-with-ardupilot-and-pixhawk.html
+https://community.nxp.com/thread/304221
+http://www.einarsundgren.se/gstreamer-basic-real-time-streaming-tutorial/  -- best
 
 
 download this
@@ -55,6 +57,35 @@ $ gst-inspect-1.0 | grep mux
 to show all available mux elements.
 
 -------------------------------
+
+
+
+COMMAND1:
+
+gst-launch udpsrc port=5000 caps ="application/x-rtp, media=(string)video, clock-rate=(int)90000, encoding-name=(string)MP4V-ES, profile-level-id=(string)6, config=(string)000001b006000001b59113000001000000012000c888800f528045a14103, payload=(int)96, ssrc=(guint)424830278, clock-base=(guint)2874253685, seqnum-base=(guint)43950" ! gstrtpjitterbuffer ! rtpmp4vdepay ! tee name=mpgvideo ! queue ! ffdec_mpeg4 ! ffmpegcolorspace ! videoscale ! autovideosink  mpgvideo. ! queue ! ffdec_mpeg4 ! ffmpegcolorspace  ! avimux ! filesink location=mympg.mp4
+
+ 
+
+NOTE: In command 1 we just decode the video and storing to the server PC in this method the size of the video is too large
+
+for eg: size of 1 min video is 2gb
+
+ 
+
+COMMAND2:
+
+ 
+
+gst-launch udpsrc port=5000 caps ="application/x-rtp, media=(string)video, clock-rate=(int)90000, encoding-name=(string)MP4V-ES, profile-level-id=(string)6, config=(string)000001b006000001b59113000001000000012000c888800f528045a14103, payload=(int)96, ssrc=(guint)424830278, clock-base=(guint)2874253685, seqnum-base=(guint)43950" ! gstrtpjitterbuffer ! rtpmp4vdepay ! tee name=mpgvideo ! queue ! ffdec_mpeg4 ! ffmpegcolorspace ! videoscale ! autovideosink  mpgvideo. ! queue ! ffdec_mpeg4 ! ffmpegcolorspace ! ffenc_mpeg4  ! avimux ! filesink location=my1mpg.mp4
+
+ 
+
+NOTE: In this command we encoding the video coming form the camera. In this method the video occupies less storage
+
+for eg: for 1min video it occupies 7mb
+
+
+------------------
 
 OOM doesn't depend on size of images
 OOM depends on network resolution (width= height= in cfg-file) and on ratio batch/subdivisions in cfg-file. GPU_memory_usage ~ width * height * batch / subdivisions
