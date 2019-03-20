@@ -10,3 +10,16 @@ https://javiermunhoz.com/blog/2017/09/09/open-source-uav-autopilot-with-ardupilo
 
 download this
 https://www.crfs.com/blog/droning-on-about-rf/
+
+
+
+http://gstreamer-devel.966125.n4.nabble.com/How-to-save-incoming-h264-stream-without-re-encoding-td1559487.html  ----
+http://z25.org/static/_rd_/videostreaming_intro_plab/index.html    -- gstreamer tut
+
+
+
+
+
+
+OOM doesn't depend on size of images
+OOM depends on network resolution (width= height= in cfg-file) and on ratio batch/subdivisions in cfg-file. GPU_memory_usage ~ width * height * batch / subdivisions
