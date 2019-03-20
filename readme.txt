@@ -16,8 +16,8 @@ https://www.crfs.com/blog/droning-on-about-rf/
 http://gstreamer-devel.966125.n4.nabble.com/How-to-save-incoming-h264-stream-without-re-encoding-td1559487.html  ----
 http://z25.org/static/_rd_/videostreaming_intro_plab/index.html    -- gstreamer tut
 https://cgit.freedesktop.org/gstreamer/gst-plugins-good/tree/gst/rtp/README#n251
-
-
+https://raspberrypi.stackexchange.com/questions/27082/how-to-stream-raspivid-to-linux-and-osx-using-gstreamer-vlc-or-netcat
+https://stackoverflow.com/questions/25840509/how-to-save-a-rtsp-video-stream-to-mp4-file-via-gstreamer/25949095#25949095
 
 
 In case anyone is interested, the code below is a simple way to get the pi to both send the stream and and record the video at the same time:
