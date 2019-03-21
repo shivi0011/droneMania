@@ -8,7 +8,7 @@ https://sites.google.com/site/npaecopterguide/source-codes/mission-planner-sourc
 https://javiermunhoz.com/blog/2017/09/09/open-source-uav-autopilot-with-ardupilot-and-pixhawk.html
 https://community.nxp.com/thread/304221
 http://www.einarsundgren.se/gstreamer-basic-real-time-streaming-tutorial/  -- best
-
+https://www.youtube.com/watch?v=MCRKfXipAkU   -- video tut good
 
 download this
 https://www.crfs.com/blog/droning-on-about-rf/
@@ -83,7 +83,19 @@ gst-launch udpsrc port=5000 caps ="application/x-rtp, media=(string)video, clock
 NOTE: In this command we encoding the video coming form the camera. In this method the video occupies less storage
 
 for eg: for 1min video it occupies 7mb
+---------------------------
 
+TRY THESE
+-------------
+on the rpi:
+
+raspivid -t 0 -w 1280 -h 720 -hf -ih -fps 20 -o - | nc -k -l 2222
+
+on your computer:
+
+mplayer -fps 200 -demuxer h264es ffmpeg://tcp://10.0.1.3:2222
+
+supports reconnecting
 
 ------------------
 
