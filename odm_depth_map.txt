@@ -1,0 +1,39 @@
+https://community.opendronemap.org/t/minimum-number-of-overlapping-images-for-point-cloud-generation/514/12
+
+Regarding question number 1, performing the affine transformation is not a mandatory step, but it improves the accuracy of the point cloud and the orthophoto as well.
+
+In order to accomplish the affine transformation, a “.points” file containing the image coordinates as well as the coordinates of frame of the camera, is needed for each photo. The “.points” file is used to apply the transformation to each photo in batch mode using ImageMagick. I wrote an R script to transform the images in batch mode, but you can use the programming languages of your choice. The procedure, which I perform regularly on an Ubuntu 16.04 machine, is detailed as follows:
+
+    Create the destination frame in a shapefile layer (e.g. in QGIS). If the coordinates of the camera frame are available, the corner coordinates to be digitized must follow the theoretical fiducial marks of the frame (e.g. point1(-125,125), point2(125,-125), … and so on); otherwise, the digitized frame may follow the fiducial marks of an arbitrary selected photo. This procedure assumes that all the photos were taken with the same camera.
+
+    Create “.points” files. Using the Gereferencer Plugin from QGIS, generate a “.points” file for each photo by clicking first on a fiducial mark in the Georeferencer window and afterward click on the corresponding corner of the rectangle layer in the map window (a dialog will prompt you whether to write the coordinates or pick them from the map display, so select the later one). This task is greatly simplified by activating the Snap tool in QGIS (Setting>Snapping Options).
+
+    Apply the affine transformation to each photo. With the “.points” files named consistently as the images (QGIS do this by default), run this R script 4. This script assumes you have ImageMagick installed on your computer. The script will perform the affine transformation to each photo, one by one. When the script finishes, a set of new images files may appear in the working directory folder. Finally, move the newly created images to a new folder.
+
+    Generate and apply a mask. In order to avoid interfere with both the SfM and the dense matching algorithms, it is recommended to apply a mask to the frames of the images. Since the affine transformation applied in the previous step warps all the images, a mask created for one image will match to all of them. You can create the mask with GIMP or the image manipulation software of your choice. To do this in GIMP, first open any of the photos and create a new layer. Then select the area to mask (e.g. using the intelligent scissors or with the magic wand). Fill the selected area of black color with the bucket tool. Delete the photo layer and Export as a new PNG file, which may only contain the mask. Apply the mask to each photo one by one or in batch mode. I use the following bash script, which assumes the photos are saved in JPG format and the mask file is named “maskfile.png”:
+
+for f in *.jpg; do convert "$f" maskfile.png -compose darken -composite m_"$f"; done
+
+Again, the script assumes you have ImageMagick installed on your computer.
+
+If you would like to check the Dominican Republic sample images, download this compressed file 5, which contains the raw photos and the transformed/masked ones.
+
+Finally, regarding question number 2, I am not familiar with the most recent version of ODM. When I posted this thread, the version available then was 0.3.1. After several trials, I decided to run ODM with the following parameters:
+
+./run.sh PROJECTFOLDER --project-path PATHTOODMPROJECTS --resize-to -1 --force-focal 152.929 --force-ccd 226.5 --use-pmvs --pmvs-min-images 2 --orthophoto-resolution 1 --min-num-features 30000 --mesh-octree-depth 12 --texturing-keep-unseen-faces --texturing-skip-visibility-test --texturing-data-term area
+
+You will notice that I preferred the PMVS algorithm for the dense matching. In addition, I customized the OpenDroneMap-master/SuperBuild/src/opensfm/opensfm/config.py file with these parameters:
+
+    #Params for depth estimation
+    depthmap_method: BRUTE_FORCE # Raw depthmap computation algorithm (PATCH_MATCH, BRUTE_FORCE, PATCH_MATCH_SAMPLE)
+    depthmap_resolution: 1280 # Resolution of the depth maps
+    depthmap_num_neighbors: 10 # Number of neighboring views
+    depthmap_num_matching_views: 2 # Number of neighboring views used for each depthmaps
+    depthmap_patchmatch_iterations: 3 # Number of PatchMatch iterations to run
+    depthmap_min_patch_sd: 1 # Patches with lower standard deviation are ignored
+    depthmap_min_correlation_score: 0.7 # Minimum correlation score to accept a depth value
+    depthmap_same_depth_threshold: 0.005 # Threshold to measure depth closeness
+    depthmap_min_consistent_views: 2 # Min number of views that should reconstruct a point for it to be valid
+    depthmap_save_debug_files: no # Save debug files with partial reconstruction results
+
+I hope this reply helps.
