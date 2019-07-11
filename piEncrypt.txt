@@ -1,0 +1,13 @@
+Codec
+Codec is short for "coder-decoder." It is an algorithm used to encode data, such as an audio or video clip. The encoded data must be decoded when played back.
+
+A media codec is not equivalent to media compression, since it is possible to encode a file without compressing it. However, most codecs do compress the original data, reducing the size of the original file. This is important for multimedia files, since they often have large file sizes. Compressed files take up less disk space and can be downloaded more quickly.
+
+Generally, a codec reduces the file size of a media file, but increases the processing power required to play the file back correctly.
+Lossless vs Lossy Codecs
+Some codecs are lossless, meaning they do not reduce the quality of the original media file. Examples of lossless audio codecs include the Free Lossless Audio Codec (FLAC), and the Apple Lossless Audio Codec (ALAC). Video codecs that support lossless compression include H.264 and QuickTime RLE. A lossless codec can often reduce the file size of a media file to about 50% without altering the quality.
+
+Other codecs are lossy, meaning the compression reduces the quality of the media. Examples of lossy audio codecs are Adaptive Differential Pulse Code Modulation (ADPCM) and MPEG-1 Layer 3 (MP3). Common lossy video codecs include MPEG-2 and HEVC. Most lossy codecs provide a variable compression setting, which allows you to select how much to compress the media. For example, if you apply heavy compression to an audio file, it may reduce the file size to 10%, but the audio may sound like it has been compressed. If you use a lower compression setting that reduces the file size to 30%, it may be closer to the original file.
+
+NOTE: Lossy codecs are commonly applied to streaming media so the data can be transferred more quickly over the Internet.
+
