@@ -1,0 +1,300 @@
+: '
+raspivid -n -t 0 -rot 270 -w 960 -h 720 -fps 30 -b 6000000 -o - | gst-launch-1.0 -e -vvvv fdsrc ! h264parse ! rtph264pay pt=96 config-interval=5 ! udpsink host=192.168.43.223 port=5000
+'
+
+: '
+gst-launch-1.0 udpsrc port=5004 caps='application/x-srtp, payload=(int)8, ssrc=(uint)1356955624, srtp-key=(buffer)012345678901234567890123456789012345678901234567890123456789, srtp-cipher=(string)aes-128-icm, srtp-auth=(string)hmac-sha1-80, srtcp-cipher=(string)aes-128-icm, srtcp-auth=(string)hmac-sha1-80' !  srtpdec ! rtppcmadepay ! alawdec ! pulsesink
+'
+
+
+: '
+Server pipeline : 
+ ! udpsink 
+host=127.0.0.1 port=5000 
+
+
+Client : gst-launch-1.0 udpsrc port=5000 ! 
+'application/x-srtp,encoding-name=(string)H264,ssrc=(uint)1356955624,srtp-key=(buffer)012345678901234567890123456789012345678901234567890123456789,srtp-cipher=(string)aes-128-icm,srtp-auth=(string)hmac-sha1-80' 
+! srtpdec ! rtph264depay ! h264parse ! avdec_h264 ! autovideosink 
+
+Currently when I use GST_DEBUG=3 level as 3, I am getting a warning 
+'
+
+
+
+: '
+this is multiline comment
+'
+
+
+
+raspivid -n -t 0 -rot 270 -w 960 -h 720 -fps 30 -b 6000000 -o - | gst-launch-1.0 -e -vvvv fdsrc ! qtdemux ! h264parse ! rtph264pay pt=96 config-interval=5 ! 'application/x-srtp, payload=(int)96, ssrc=(uint)1356955624' ! srtpenc key="012345678901234567890123456789012345678901234567890123456789" ! udpsink host=192.168.43.223 port=5000
+
+
+
+gst-launch-1.0 audiotestsrc ! alawenc ! rtppcmapay ! 'application/x-rtp, payload=(int)8, ssrc=(uint)1356955624' ! srtpenc key="012345678901234567890123456789012345678901234567890123456789" ! udpsink port=5000
+
+
+
+------------------
+gst-launch-1.0 -v tcpclientsrc host=<Pi-IP> port=5000 ! gdpdepay ! rtph264depay ! h264parse ! omxh264dec ! autovideosink sync=false
+Just for reference, I got mine 'streaming' (point to point) to my Ubuntu laptop with netcat and mplayer .... this on the Laptop (started first)
+Code: Select all
+
+nc -l -p 5001 | mplayer -fps 31 -cache 1024 -
+and this on the Pi
+Code: Select all
+
+raspivid -t 0 -o - | nc 192.168.43.223 5001
+-------------------
+
+
+
+
+
+to find out the error -- try in below fashion
+------------------------------------------------
+gst-launch -v v4l2src ! jpegenc ! "image/jpeg,width=320,height=240,framerate=30/1" ! fakesink
+gst-launch -v v4l2src ! jpegenc ! "image/jpeg,width=320,height=240,framerate=30/1" ! multipartmux ! fakesink
+gst-launch -v v4l2src ! jpegenc ! "image/jpeg,width=320,height=240,framerate=30/1" ! multipartmux ! tcpserversink host=192.168.101 port=5000 sync=false 
+gst-launch -v alsasrc device=hw:1 ! audioconvert ! fakesink
+gst-launch -v alsasrc device=hw:1 ! audioconvert ! audioresample ! 'audio/x-raw-int,rate=8000,width=16,channels=1' ! fakesink
+gst-launch -v alsasrc device=hw:1 ! audioconvert ! audioresample ! 'audio/x-raw-int,rate=8000,width=16,channels=1' ! udpsink host=x.x.x.x port=5001
+
+and if ALL of those have worked,
+gst-launch -v v4l2src ! jpegenc ! "image/jpeg,width=320,height=240,framerate=30/1" ! multipartmux ! tcpserversink host=192.168.101 port=5000 sync=false \ 
+alsasrc device=hw:1 ! audioconvert ! audioresample ! 'audio/x-raw-int,rate=8000,width=16,channels=1' ! udpsink host=x.x.x.x port=5001
+
+
+
+¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬
+¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬
+# on the server (RPi):
+gst-launch-1.0 -vvv v4l2src \
+! video/x-h264,width=1920,height=1080,framerate=30/1 \
+! rtph264pay \
+! gdppay
+! udpsink host=192.168.0.168 port=5000
+
+# on the client (MacBookPro)
+gst-launch-1.0 -vvv udpsrc port=5000 \
+   caps="application/x-rtp, media=(string)video, \
+   clock-rate=(int)90000, encoding-name=(string)H264, payload=(int)96" \
+! gdpdepay
+! rtpjitterbuffer drop-on-latency=true latency=300 \
+! rtph264depay \
+! queue max-size-buffers=1 \
+! matroskamux \
+! filesink location=/tmp/video.mkv
+
+1) on the client use "gst-launch-1.0 -e ... " to cause ctrl-c to send an eos so that the file gets finalized.
+
+2) on the raspi, add "gdppay" before udpsink and on the client add "gdpdepay" after udpsrc. This will transport events and queries, since you don't use rtsp.
+
+3) on the client try running with GST_DEBUG="*:3" to see if there are any wayrnings. Also try running with " ! decodebin ! autovideosink" to see if you get any images.
+
+¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬
+
+Following ensonic's comment (see below), I finally managed to have both pipelines working. The trick was to use gdppay/gdpdepay elements instead of rtph264pay/rtph264depay.
+
+On the server-side (Raspberry Pi)
+
+#set the Logitech C920 cam properly (1920x1080, 30 fps)
+v4l2-ctl --set-fmt-video=width=1920,height=1080,pixelformat=1 --set-parm=30
+
+# exec the following pipeline (only after gstreamer runs on the client!):
+gst-launch-1.0 -vvv -e v4l2src \
+ ! video/x-h264,width=1920,height=1080,framerate=30/1 \
+ ! gdppay \
+ ! udpsink host=192.168.0.168 port=5000
+On the client side (MacBookPro)
+
+# launch the following command before executing server pipeline:
+gst-launch-1.0 -e -vvv udpsrc port=5000 \
+   caps="application/x-gdp, streamheader=(buffer)< [insert long header here] >" \
+ ! gdpdepay \
+ ! video/x-h264, width=1920, height=1080, pixel-aspect-ratio=1/1, framerate=30/1 \
+ ! decodebin \
+ ! queue max-size-buffers=10 \
+ ! autovideosink sync=false async=false
+
+¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬¬
+
+
+To make rtsp server:  WORKING
+-------------------------------
+
+https://devtalk.nvidia.com/default/topic/1025341/gst-rtsp-server-does-not-build-successfully-on-tx1/
+
+sudo apt-get install libgstrtspserver-1.0 libgstreamer1.0-dev
+
+
+test-launch.c @ https://github.com/GStreamer/gst-rtsp-server/blob/master/examples/test-launch.c
+
+navigate to examples folder in the rtspserver package and run below command --
+
+gcc test-launch.c -o test-launch $(pkg-config --cflags --libs gstreamer-1.0 gstreamer-rtsp-server-1.0)
+./test-launch "videotestsrc ! omxh265enc ! rtph265pay name=pay0 pt=96"
+
+
+Host
+----
+Open network stream rtsp://<TARGET_IP_ADDRESS>:8554/test via VLC
+
+
+
+
+
+To install the packages
+----------------------------
+sudo apt-get update
+sudo apt-get install --no-install-recommends \
+    gstreamer1.5-{tools,libav} \
+    gstreamer1.5-plugins-{base,good,bad,ugly}
+
+
+
+
+££££££££££££££££££££££££££££££££££££££££££££££££££
+Working with VLC - with http
+-----------------
+on Server (Pi)
+.................
+sudo apt-get install vlc
+ 
+
+on Client (PC)
+...............
+open vlc --> network --> http://raspi_IP:8160
+
+With rtsp
+---------
+raspivid -o - -t 0 -hf -w 800 -h 400 -fps 24 |cvlc -vvv stream:///dev/stdin --sout '#rtp{sdp=rtsp://:8160/}' :demux=h264 :h264-fps=24
+
+
+
+
+
+
+
+
+H264
+--------
+ffmpeg -i output.h264 -frames:v 1 -f image2 frame.png
+
+
+
+convert into frames
+ffmpeg -i output.h264 thumb%04d.jpg -hide_banner
+
+combine frames into vid
+ffmpeg -r 60 -f image2 -s 800x632 -i thumb%04d.jpg -vcodec libx264 -crf 25  -pix_fmt yuv420p test.mp4
+ffmpeg -r 60 -f image2 -s 800x632 -i thumb%04d.jpg -vcodec libx264 -crf 25  -pix_fmt yuv420p test.h264
+
+ffmpeg -r 60 -f image2 -s 800x632 -i thumb%04d.jpg_blend.jpg -vcodec libx264 -crf 25  -pix_fmt yuv420p blended.h264
+
+
+
+
+
+generate colored image with random pixels
+---------------------------------
+This is simple with numpy and pylab. You can set the colormap to be whatever you like, here I use spectral.
+
+from pylab import imshow, show, get_cmap
+from numpy import random
+
+Z = random.random((50,50))   # Test data
+
+imshow(Z, cmap=get_cmap("Spectral"), interpolation='nearest')
+show()
+
+
+generate grayscale bitmap image with random pixels
+---------------------------------------------
+import pylab as plt
+import numpy as np
+
+Z = np.random.random((500,500))   # Test data
+plt.imshow(Z, cmap='gray', interpolation='nearest')
+plt.show()
+
+----------------WORKING----------------------
+import numpy 
+from PIL import Image
+
+imarray = numpy.random.rand(100,100,3) * 255
+im = Image.fromarray(imarray.astype('uint8')).convert('RGBA')
+im.save('result_image.png')
+
+---------------------------------------------
+getpixel method of PIL.Image returns value of a pixel, but to modify it you need to use putpixel method. So instead of
+out.getpixel((i,j)),(image_one.getpixel((i,j)) * (1.0 - 0.3) +  image_two.getpixel((i,j)) * 0.3 )
+
+use
+out.putpixel((i,j), (image_one.getpixel((i,j)) * (1.0 - 0.3) +  image_two.getpixel((i,j)) * 0.3 ))
+
+
+
+
+
+
+
+
+----------------------------------
+PIL has a blend function which combines two RGB images with a fixed alpha:
+
+out = image1 * (1.0 - alpha) + image2 * alpha
+However, to use blend, image1 and image2 must be the same size. So to prepare your images you'll need to paste each of them into a new image of the appropriate (combined) size.
+
+Since blending with alpha=0.5 averages the RGB values from both images equally, we need to make two versions of the panorama -- one with img1 one top and one with img2 on top. Then regions with no overlap have RGB values which agree (so their averages will remain unchanged) and regions of overlap will get blended as desired.
+
+import operator
+from PIL import Image
+from PIL import ImageDraw
+
+# suppose img1 and img2 are your two images
+img1 = Image.new('RGB', size=(100, 100), color=(255, 0, 0))
+img2 = Image.new('RGB', size=(120, 130), color=(0, 255, 0))
+
+# suppose img2 is to be shifted by `shift` amount 
+shift = (50, 60)
+
+# compute the size of the panorama
+nw, nh = map(max, map(operator.add, img2.size, shift), img1.size)
+
+# paste img1 on top of img2
+newimg1 = Image.new('RGBA', size=(nw, nh), color=(0, 0, 0, 0))
+newimg1.paste(img2, shift)
+newimg1.paste(img1, (0, 0))
+
+# paste img2 on top of img1
+newimg2 = Image.new('RGBA', size=(nw, nh), color=(0, 0, 0, 0))
+newimg2.paste(img1, (0, 0))
+newimg2.paste(img2, shift)
+
+# blend with alpha=0.5
+result = Image.blend(newimg1, newimg2, alpha=0.5)
+---------------------------------------------------
+
+To convert any image into RGB
+..............................
+import PIL
+
+# The conversion should work equally with a bitmap
+img = PIL.Image.open("blackline.jpg")
+rgb_im = img.convert('RGB')
+
+rgb_im.size
+This returns the size in number of pixels: (680,646). You can query the color of individual pixels with rgb_im.getpixel((x,y)) where x goes horizontal and y goes vertical, from top to bottom I believe.
+
+So to check whether the first line is all black (or mostly black), you could do something like this:
+
+# Get the first row rgb values
+first_row = [rgb_im.getpixel((i,0)) for i in range(rgb_im.size[0])]
+# Count how many pixels are black. Note that jpg is not the cleanest of all file formats. 
+# Hence converting to and from jpg usually comes with some losses, i.e. changes in pixel values. 
+first_row.count((0,0,0)) # --> 628
+len(first_row) #--> 680
+
+----------------------------------------------
