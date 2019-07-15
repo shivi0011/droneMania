@@ -1,1 +1,5 @@
 https://abhijitnathwani.github.io/blog/    -- BEST
+https://abhijitnathwani.github.io/blog/2017/12/20/First-C-Program-for-Image-Processing -- Print it
+http://www.fastgraph.com/help/bmp_header_format.html   
+http://www.fastgraph.com/help/jpeg_header_format.html
+https://github.com/abhijitnathwani/image-processing/blob/master/image_copy.c    -- CODE IS HERE
