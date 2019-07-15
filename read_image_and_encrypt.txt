@@ -1,0 +1,41 @@
+# import the necessary packages
+
+from PIL import Image
+from numpy import*
+
+
+from array import *
+
+w, h = 256, 256;
+e = [[0 for a in range(w)] for b in range(h)] 
+
+for i in range(0,256):
+    for j in range(0,256):
+        if(i==0):
+            e[i][j] = (17*i+j+9*j+29)%256
+            #print(e[i][j])
+        else:
+            e[i][j] = (e[i-1][j]+i)%256
+
+
+from PIL import Image
+im = Image.open('20.bmp')
+pixelMap = im.load()
+
+img = Image.new( im.mode, im.size)
+pixelsNew = img.load()
+row = img.size[0]
+col = img.size[1]
+
+for i in range(0,row,256):
+    for j in range(0,col,256):
+        for k in range(0,256,1):
+            for l in range(0,256,1):
+                pixelsNew[i+k,j+e[k][l]] = pixelMap[i+k,j+l]
+
+        #if 205 in pixelMap[i,j]:
+         #   pixelMap[i,j] = (0,0,0,255)
+        #else:
+         #   pixelsNew[i,j] = pixelMap[i,j]
+#img.show()
+img.save("out2.jpg")
