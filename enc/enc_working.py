@@ -122,4 +122,13 @@ for i in range(0,h,256):
 cv2.imwrite("pixelDec.bmp", pixelDec)             
 
 
+#------Now crop it----------------------------
+'''
+from PIL import Image
+img1 = Image.open("pixelDec.bmp")
+
+crop_rectangle = (0, 0, 768, 256)
+cropped_im = img1.crop(crop_rectangle)
+cropped_im.save('pixelDecCropped.bmp')
+'''
 
